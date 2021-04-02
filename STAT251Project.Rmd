@@ -3,6 +3,7 @@ title: "STAT 251 - Project"
 author: "Joshua Carpenter, Cecilia Fu"
 date: "3/24/2021"
 output: pdf_document
+urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
@@ -39,11 +40,11 @@ Between the years of 2000 and 2019, the World Health Organization (WHO) has coll
 
 To do this, we will model the proportion of deaths due to cardiovascular disease in the United States as the probability of success of a binomial random variable, where the population consists of all deaths in the United States and a trial consists of sampling one death and determining whether or not the cause was cardiovascular disease. We will consider a success to be that the death was caused by cardiovascular disease and a failure that it was not. We will similarly model the proportion of deaths outside the United States caused by cardiovascular disease as the probability of success of a binomial random variable where the population is all deaths that occurred outside of the United States.
 
-We will then determine an appropriate beta prior distribution, which we will use for both data distributions; we will run a Bayesian update based on data from WHO; and we will compare the posterior distributions using Monte-Carlo methods. Based on the Monte-Carlo estimated posterior distribution for the difference in proportions, we will determine a 95% confidence interval and conclude whether the proportions are significantly different.
+We will then determine an appropriate gamma prior distribution, which we will use for both data distributions; we will run a Bayesian update based on data from WHO; and we will compare the posterior distributions using Monte-Carlo methods. Based on the Monte-Carlo estimated posterior distribution for the difference in proportions, we will determine a 95% confidence interval and conclude whether the proportions are significantly different.
 
 ## Data
 
-Below is a summary of the data to be used. All values are deaths per thousand.
+Below is a summary of the data to be used. The variable `Total_Deaths` is the total number of deaths, measured in thousands of deaths, in that country during the time period of data collection. The variable `Cardio_Disease` is the number of those deaths that were caused by cardiovascular disease, also measured in thousands of deaths.
 
 ```{r, fig.align='center'}
 cardio_tail <- cardio %>%
@@ -82,6 +83,34 @@ overall_summ <- rbind(cardio_summ, death_summ) %>%
 row.names(overall_summ) <- c("Cardio_Disease", "Total_Deaths")
 kable(overall_summ, align = "c")
 ```
+
+We will make a comparison between the United States and all other countries, so we will summarize the data in just two rows.
+
+```{r}
+cardio_comp <- cardio %>%
+  mutate(Category = fct_collapse(cardio$Country,
+                                 USA = "USA",
+                                 other_level = "OTH")) %>%
+  group_by(Category) %>%
+  summarise(Cardio_Disease = round(sum(Cardio_Disease) * 1000),
+            Total_Deaths = sum(Total_Deaths) * 1000)
+kable(cardio_comp, align = "c")
+
+data <- cardio_comp %>%
+  select(-Category) %>%
+  as.matrix()
+row.names(data) <- cardio_comp$Category
+```
+
+## Prior Distribution
+
+```{r}
+x <- seq(0, 1, length = 1001)
+a <- 1.5
+b <- 10
+plot(x, dbeta(x, a, b), type = "l")
+```
+
 
 \newpage
 ## Apendix A: Data Source
