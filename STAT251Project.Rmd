@@ -33,6 +33,7 @@ total_deaths_vals <- read_xlsx("deaths2019.xlsx",
   pivot_longer(everything(), names_to = "Names", values_to = "Total_Deaths") %>%
   select(-Names)
 cardio <- bind_cols(country_codes, cardio_disease_vals, total_deaths_vals)
+##
 ```
 
 ## Introduction
