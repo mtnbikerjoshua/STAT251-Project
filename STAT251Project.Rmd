@@ -23,18 +23,19 @@ set.seed(3812)
 ```{r read_data, include=FALSE}
 ## Read in the data
 country_codes <- read_xlsx("deaths2019.xlsx",
-          range = "'Deaths All ages'!H8:GH8",
-          col_names = FALSE) %>%
+                           range = "'Deaths All ages'!H8:GH8",
+                           col_names = FALSE) %>%
   pivot_longer(everything(), names_to = "Names", values_to = "Country") %>%
   select(-Names)
 cardio_disease_vals <- read_xlsx("deaths2019.xlsx",
           range = "'Deaths All ages!H148:GH148",
           col_names = FALSE) %>%
-  pivot_longer(everything(), names_to = "Names", values_to = "Cardio_Disease") %>%
+  pivot_longer(everything(), names_to = "Names",
+               values_to = "Cardio_Disease") %>%
   select(-Names)
 total_deaths_vals <- read_xlsx("deaths2019.xlsx",
-          range = "'Deaths All ages!H11:GH11",
-          col_names = FALSE) %>%
+                               range = "'Deaths All ages!H11:GH11",
+                               col_names = FALSE) %>%
   pivot_longer(everything(), names_to = "Names", values_to = "Total_Deaths") %>%
   select(-Names)
 cardio <- bind_cols(country_codes, cardio_disease_vals, total_deaths_vals)
@@ -123,6 +124,118 @@ plot(x, dbeta(x, a, b), type = "l",
 
 ## Analysis: USA vs China
 
+Comparison people passed away from Cardio Disease between the USA and China
+```{r}
+# create a table that have information for both USA and China
+cardio_USA_CHN <- cardio %>%
+                  filter(Country == "USA"| Country == "CHN") %>%
+                  mutate(Cardio_Disease = as.character(round(Cardio_Disease) * 1000, 5),
+                         Total_Deaths = as.character(round(Total_Deaths) * 1000, 4))
+
+kable(cardio_USA_CHN, align = "c")
+                  
+```
+
+## Prior Distribution
+
+```{r}
+x <- seq(0, 1, length = 1001)
+a <- 1.5
+b <- 10
+plot(x, dbeta(x, a, b), type = "l")
+
+# Prior Distribution 
+J <- 100000
+prior.cardio <- rbeta(J, a, b)
+```
+
+## Posterior Distribution 
+```{r}
+# Number of people passed away from Cardio Disease in the USA from 2000 to 2019
+NumCardio.USA <- as.numeric(cardio_comp[1,"Cardio_Disease"])
+
+# Number of people passed away from other causes in the USA from 2000 to 2019
+NumNonCardio.USA <- as.numeric(cardio_comp[1, "Total_Deaths"]) - NumCardio.USA
+
+# Posterior parameter
+astar.USA <- a + NumCardio.USA
+bstar.USA <- b + NumNonCardio.USA
+
+# Posterior distribution for people passed away due to Cardio Disease
+post.cardio.USA <- rbeta(J, astar.USA, bstar.USA)
+
+# Number of people passed away from Cardio Disease in the China from 2000 to 2019
+NumCardio.CHN <- as.numeric(cardio_USA_CHN[1,"Cardio_Disease"])
+
+# Number of people passed away from other causes in the China from 2000 to 2019
+NumNonCardio.CHN <- as.numeric(cardio_USA_CHN[1, "Total_Deaths"]) - NumCardio.CHN
+
+# Posterior parameter for China
+astar.CHN <- a + NumCardio.CHN 
+bstar.CHN <- b + NumNonCardio.CHN
+
+# Posterior distribution for people passed away due to Cardio Disease
+post.cardio.CHN <- rbeta(J, astar.CHN, bstar.CHN)
+
+
+```
+
+## Posterior Difference between USA and CHN
+```{r}
+# Posterior Difference
+post.diff <- post.cardio.USA - post.cardio.CHN
+
+# mean of post.diff
+mean(post.diff)
+
+# 95% credible interval for Posterior difference
+quantile(post.diff, c(0.025, 0.975))
+
+# Histogram of the posterior Difference 
+hist(post.diff, main = expression(paste("Estimated Posterior and density of ", theta[USA], "-", theta[CHN], sep = "")),
+     xlab = expression(theta[USA] - theta[CHN]), ylab = "Density")
+lines(density(post.diff), col = "red")
+```
+## Posterior predictive
+```{r}
+# Predictive distribution 
+pred.dist <- function(a, b, ynew, nnew){
+      logprob <- lgamma(a+b) - (lgamma(a) + lgamma(b)) +
+      lchoose(nnew, ynew) + lgamma(a+ynew) +
+      lgamma(b+nnew-ynew) - lgamma(a+b+nnew)
+
+      exp(logprob)
+}
+
+```
+
+## Posterior predictive for both USA and China
+```{r}
+# USA
+# We suppose we continue observe for the next season after collecting the death data in 2020,
+# compute we would observe at least 6000 people passed away due to cardio disease out of 20000 total  death in USA. 
+post.pred.USA <- pred.dist(a = astar.USA, b = bstar.USA, ynew = 6000:20000, nnew = 20000)
+sum(post.pred.USA)
+
+# Estimate above using Monte Carlo
+J = 100000
+mc.postpred.USA <- rbinom(J, size = 20000, prob = rbeta(J,astar.USA,bstar.USA))
+mean(mc.postpred.USA >= 6000)
+
+#CHN
+# We suppose we continue observe for the next season after collecting the death data in 2020,
+# compute we would observe at least 6000 people passed away due to cardio disease out of 20000 total  death in USA. 
+post.pred.CHN <- pred.dist(a = astar.CHN, b = bstar.CHN, ynew = 6000:20000, nnew = 20000)
+sum(post.pred.CHN)
+
+# Estimate above using Monte Carlo
+J = 100000
+mc.postpred.CHN <- rbinom(J, size = 20000, prob = rbeta(J,astar.CHN,bstar.CHN))
+mean(mc.postpred.CHN >= 6000)
+
+
+```
+
 ## Analysis: USA vs All Other Countries
 
 In order to make a comparison between the United States and all other countries, we will summarize the data in just two rows.
@@ -145,6 +258,7 @@ row.names(USvAll) <- cardio_comp$Category
 
 
 ```
+
 
 Now, based on that data, we will update the prior distributions and call the new parameters $a^*$ and $b^*$.
 $$a^*_\text{USA}=a+y=1.5+873,200=873,201.5$$
