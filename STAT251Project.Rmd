@@ -2,54 +2,60 @@
 title: "STAT 251 - Project"
 author: "Joshua Carpenter, Cecilia Fu"
 date: "3/24/2021"
-output: pdf_document
+output:
+  pdf_document:
+    fig_caption: yes
 urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
-
+## Setup
 library(knitr)
 opts_chunk$set(echo = FALSE, comment=NA)
 
 library(readxl)
 library(tidyverse)
 set.seed(3812)
+
+
 ```
 
-```{r, include=FALSE}
-# Read in the data
+```{r read_data, include=FALSE}
+## Read in the data
 country_codes <- read_xlsx("deaths2019.xlsx",
-                            range = "'Deaths All ages'!H8:GH8",
-                            col_names = FALSE) %>%
-                            pivot_longer(everything(), names_to = "Names", values_to = "Country") %>%
-                            select(-Names)
+                           range = "'Deaths All ages'!H8:GH8",
+                           col_names = FALSE) %>%
+  pivot_longer(everything(), names_to = "Names", values_to = "Country") %>%
+  select(-Names)
 cardio_disease_vals <- read_xlsx("deaths2019.xlsx",
-                            range = "'Deaths All ages!H148:GH148",
-                            col_names = FALSE) %>%
-                            pivot_longer(everything(), names_to = "Names", values_to = "Cardio_Disease") %>%
-                            select(-Names)
+          range = "'Deaths All ages!H148:GH148",
+          col_names = FALSE) %>%
+  pivot_longer(everything(), names_to = "Names",
+               values_to = "Cardio_Disease") %>%
+  select(-Names)
 total_deaths_vals <- read_xlsx("deaths2019.xlsx",
-                            range = "'Deaths All ages!H11:GH11",
-                            col_names = FALSE) %>%
-                            pivot_longer(everything(), names_to = "Names", values_to = "Total_Deaths") %>%
-                            select(-Names)
+                               range = "'Deaths All ages!H11:GH11",
+                               col_names = FALSE) %>%
+  pivot_longer(everything(), names_to = "Names", values_to = "Total_Deaths") %>%
+  select(-Names)
 cardio <- bind_cols(country_codes, cardio_disease_vals, total_deaths_vals)
 
 
 ```
 
 ## Introduction
-Between the years of 2000 and 2019, the World Health Organization (WHO) has collected data on causes of death in 183 countries. We are interested particularly in Cardiovascular Disease. The purpose of this analysis will be to determine if cardiovascular disease is a more prevalent cause of death in the United States than elsewhere, that is if the proportion of deaths due to cardiovascular disease is greater in the US than in other countries.
+Between the years of 2000 and 2019, the World Health Organization (WHO) has collected data on causes of death in 183 countries. We are interested particularly in Cardiovascular Disease. The purpose of this analysis will be to determine if cardiovascular disease is a more prevalent cause of death in the United States than elsewhere, that is if the proportion of deaths due to cardiovascular disease is greater in the US than in other countries. We are also interested in comparing death due to cardiovascular disease in the US vs China, the countries of origin of the authors.
 
-To do this, we will model the proportion of deaths due to cardiovascular disease in the United States as the probability of success of a binomial random variable, where the population consists of all deaths in the United States and a trial consists of sampling one death and determining whether or not the cause was cardiovascular disease. We will consider a success to be that the death was caused by cardiovascular disease and a failure that it was not. We will similarly model the proportion of deaths outside the United States caused by cardiovascular disease as the probability of success of a binomial random variable where the population is all deaths that occurred outside of the United States.
+To do this, we will model the proportion of deaths due to cardiovascular disease in the United States as the probability of success of a binomial random variable, where the population consists of all deaths in the United States and a trial consists of sampling one death and determining whether or not the cause was cardiovascular disease. We will consider a success to be that the death was caused by cardiovascular disease and a failure that it was not. We will compare that to a similar model of deaths due to cardiovascular disease in China. We will also model the proportion of deaths outside the United States caused by cardiovascular disease as the probability of success of a binomial random variable where the population is all deaths that occurred outside of the United States.
 
-We will then determine an appropriate gamma prior distribution, which we will use for both data distributions; we will run a Bayesian update based on data from WHO; and we will compare the posterior distributions using Monte-Carlo methods. Based on the Monte-Carlo estimated posterior distribution for the difference in proportions, we will determine a 95% confidence interval and conclude whether the proportions are significantly different.
+We will determine an appropriate beta prior distribution, which we will use for all three data distributions; we will run a Bayesian update based on data from WHO; and we will compare the posterior distribution for the USA to the posterior distributions for China and for all countries except the USA combined using Monte-Carlo methods. Based on the Monte-Carlo estimated posterior distribution for the difference in proportions, we will determine a 95% confidence interval for each test and conclude whether the proportions are significantly different.
 
 ## Data
 
 Below is a summary of the data to be used. The variable `Total_Deaths` is the total number of deaths, measured in thousands of deaths, in that country during the time period of data collection. The variable `Cardio_Disease` is the number of those deaths that were caused by cardiovascular disease, also measured in thousands of deaths.
 
-```{r, fig.align='center'}
+```{r summarise_data, fig.align='center'}
+## Summarise the data
 cardio_tail <- cardio %>%
   rownames_to_column("ID") %>%
   tail(2) %>%
@@ -60,11 +66,19 @@ row_USA <- cardio %>%
   filter(Country == "USA") %>%
   mutate(Cardio_Disease = as.character(round(Cardio_Disease, 5)),
          Total_Deaths = as.character(round(Total_Deaths, 4)))
+row_CHN <- cardio %>%
+  rownames_to_column("ID") %>%
+  filter(Country == "CHN") %>%
+  mutate(Cardio_Disease = as.character(round(Cardio_Disease, 5)),
+         Total_Deaths = as.character(round(Total_Deaths, 4)))
 cardio_head <- cardio %>%
   rownames_to_column("ID") %>%
   head(3) %>%
   mutate(Cardio_Disease = as.character(round(Cardio_Disease, 5)),
          Total_Deaths = as.character(round(Total_Deaths, 4))) %>%
+  add_row(ID = "...", Country = "...",
+          Cardio_Disease = "...", Total_Deaths = "...") %>%
+  add_row(row_CHN) %>%
   add_row(ID = "...", Country = "...",
           Cardio_Disease = "...", Total_Deaths = "...") %>%
   add_row(row_USA) %>%
@@ -85,25 +99,30 @@ overall_summ <- rbind(cardio_summ, death_summ) %>%
   round(4)
 row.names(overall_summ) <- c("Cardio_Disease", "Total_Deaths")
 kable(overall_summ, align = "c")
+
+
 ```
 
-We will make a comparison between the United States and all other countries, so we will summarize the data in just two rows.
+## Prior Distribution
 
-```{r}
-cardio_comp <- cardio %>%
-  mutate(Category = fct_collapse(cardio$Country,
-                                 USA = "USA",
-                                 other_level = "OTH")) %>%
-  group_by(Category) %>%
-  summarise(Cardio_Disease = round(sum(Cardio_Disease) * 1000),
-            Total_Deaths = sum(Total_Deaths) * 1000)
-kable(cardio_comp, align = "c")
+In the absence of a professional opinion, we will rely on our own limited knowledge to construct a prior distribution for $p$. Given the many possible ways to die, we think that it is very unlikely that the proportion of deaths that are caused by cardiovascular disease is greater than 0.5. In fact, we believe that the proportion will be much less that 0.5, so we will therefore choose a distribution that assigns most of the weight close to zero and almost no weight greater than 0.5. Since we are not experts on the subject, we will choose low values for the $a$ and $b$ and expect most of our information to come from the data. For our prior, we will use a beta distribution with $a=1.5$ and $b=10$.
 
-data <- cardio_comp %>%
-  select(-Category) %>%
-  as.matrix()
-row.names(data) <- cardio_comp$Category
+```{r plot_prior, fig.height = 3, fig.width = 4, fig.cap="Prior distribution of the proportion of deaths that are caused by cardiovascular disease"}
+## Plot prior distribution
+x <- seq(0, 1, length = 1001)
+a <- 1.5
+b <- 10
+plot(x, dbeta(x, a, b), type = "l",
+     main = substitute(paste(pi, "(", theta, ")", " ~ Beta(a = ",
+                             a, ", b = ", b, ")",  sep = ""),
+                       list(a = a, b = b)),
+     ylab = "Density",
+     xlab = "p")
+
+
 ```
+
+## Analysis: USA vs China
 
 Comparison people passed away from Cardio Disease between the USA and China
 ```{r}
@@ -133,10 +152,10 @@ prior.cardio <- rbeta(J, a, b)
 ## Posterior Distribution 
 ```{r}
 # Number of people passed away from Cardio Disease in the USA from 2000 to 2019
-NumCardio.USA <- as.numeric(cardio_comp[1,"Cardio_Disease"])
+NumCardio.USA <- as.numeric(cardio_USA_CHN[2,"Cardio_Disease"])
 
 # Number of people passed away from other causes in the USA from 2000 to 2019
-NumNonCardio.USA <- as.numeric(cardio_comp[1, "Total_Deaths"]) - NumCardio.USA
+NumNonCardio.USA <- as.numeric(cardio_USA_CHN[2, "Total_Deaths"]) - NumCardio.USA
 
 # Posterior parameter
 astar.USA <- a + NumCardio.USA
@@ -219,15 +238,117 @@ Conclusion of the posterior difference from USA and China: We compared the the d
 
 ```
 
+## Analysis: USA vs All Other Countries
+
+In order to make a comparison between the United States and all other countries, we will summarize the data in just two rows.
+
+```{r USAvAll}
+## Summarize data for USA vs all other countries
+cardio_comp <- cardio %>%
+  mutate(Category = fct_collapse(cardio$Country,
+                                 USA = "USA",
+                                 other_level = "OTH")) %>%
+  group_by(Category) %>%
+  summarise(Cardio_Disease = round(sum(Cardio_Disease) * 1000),
+            Total_Deaths = sum(Total_Deaths) * 1000)
+kable(cardio_comp, align = "c")
+
+USvAll <- cardio_comp %>%
+  select(-Category) %>%
+  as.matrix()
+row.names(USvAll) <- cardio_comp$Category
+
+
+```
+
+
+Now, based on that data, we will update the prior distributions and call the new parameters $a^*$ and $b^*$.
+$$a^*_\text{USA}=a+y=1.5+873,200=873,201.5$$
+$$b^*_\text{USA}=b+n-y=10+2,949,214-873,200=20,76,024$$
+$$a^*_\text{OTH}=a+y=1.5+16,990,627=16,990,628.5$$
+$$b^*_\text{OTH}=b+n-y=10+52,466,558-16,990,627=35,475,941$$
+
+```{r post_USA, fig.height = 3, fig.width = 4, fig.cap="Posterior distribution of Death by Cardiovascular Disease in the United States"}
+## Update the prior for USA and plot the posterior
+y <- USvAll["USA", "Cardio_Disease"]
+n <- USvAll["USA", "Total_Deaths"]
+astar_USA <- a + y
+bstar_USA <- b + n - y
+
+x <- seq(0.29, 0.3, length = 1001)
+plot(x, dbeta(x, astar_USA, bstar_USA), type = "l",
+     main = substitute(paste(pi, "(", theta, "|y)", " ~ Beta(a = ",
+                             a, ", b = ", b, ")",  sep = ""),
+                       list(a = astar_USA, b = bstar_USA)),
+     ylab = "Density",
+     xlab = "p")
+
+
+```
+
+
+```{r post_OTH, fig.height = 3, results='hide', fig.width = 4, fig.cap="Posterior distribution of death by cardiovascular disease in countries other than the United States"}
+## Update the prior for the rest of the world and plot the posterior
+y <- USvAll["OTH", "Cardio_Disease"]
+n <- USvAll["OTH", "Total_Deaths"]
+astar_OTH <- a + y
+bstar_OTH <- b + n - y
+
+x <- seq(0.322, 0.326, length = 1001)
+# Note the two extra spaces in the main label are intentional to fix formatting
+plot(x, dbeta(x, astar_OTH, bstar_OTH), type = "l",
+     main = substitute(paste(pi, "(", theta, "|y)", " ~ Beta(a = ",
+                             a, ", b = ", b, ")  ",  sep = ""),
+                       list(a = astar_OTH, b = bstar_OTH)),
+     ylab = "Density",
+     xlab = "p")
+
+# Means
+astar_USA / (astar_USA + bstar_USA)
+astar_OTH / (astar_OTH + bstar_OTH)
+
+
+```
+
+We will now use Monte Carlo sampling to take samples from the posterior distribution of $p_\text{USA}-p_\text{OTH}$ and compute a 95% confidence interval.
+
+
+```{r post_USAvAll, fig.height=3, fig.width=4, fig.cap="Monte Carlo approximation of the posterior distribution of the difference in proportions of deaths due to cardiovascular disease in the USA compared to other countries"}
+## Sample from the posterior of USA - OTH and plot the estimated posterior
+J <- 10^6
+sample_USA <- rbeta(J, astar_USA, bstar_USA)
+sample_OTH <- rbeta(J, astar_OTH, bstar_OTH)
+sample_USAvAll <- sample_USA - sample_OTH
+
+plot(density(sample_USAvAll), zero.line = FALSE,
+     main = expression(paste(pi, "(", theta[USA] - theta[OTH], ")", sep = "")),
+     xlab = expression(p[USA] - p[OTH]))
+
+
+```
+```{r confint_USAvAll, include=FALSE}
+## Compute a 95% credible interval for the difference in proportions
+CI <- round(quantile(sample_USAvAll, c(0.025, 0.975)), 4)
+
+
+```
+
+According to our credible interval, there is a 95% probability that the proportion of deaths in the United States due to cardiovascular disease is between `r abs(CI[2])` and `r abs(CI[1])` lower than the proportion of deaths due to cardiovascular disease in other countries.
+
+## Conclusion
+<Write conclusion here>
+
 \newpage
 ## Apendix A: Data Source
 Global health estimates: Leading causes of death
 
 Cause-specific mortality, 2000–2019
 
-See [Global summary estimates](https://www.who.int/docs/default-source/gho-documents/global-health-estimates/ghe2019_cod_global_2000_20194e572f53-509f-4578-b01e-6370c65d9fc5.xlsx?sfvrsn=eaf8ca5_7)
+Downloaded from:
 
 https://www.who.int/data/gho/data/themes/mortality-and-global-health-estimates/ghe-leading-causes-of-death
+
+See "Global summary estimates" under "Global and by Region".
 
 ## Apendix B: Code
 ```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
