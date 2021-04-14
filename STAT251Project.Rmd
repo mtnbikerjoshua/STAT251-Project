@@ -152,10 +152,10 @@ prior.cardio <- rbeta(J, a, b)
 ## Posterior Distribution 
 ```{r}
 # Number of people passed away from Cardio Disease in the USA from 2000 to 2019
-NumCardio.USA <- as.numeric(cardio_comp[1,"Cardio_Disease"])
+NumCardio.USA <- as.numeric(cardio_USA_CHN[2,"Cardio_Disease"])
 
 # Number of people passed away from other causes in the USA from 2000 to 2019
-NumNonCardio.USA <- as.numeric(cardio_comp[1, "Total_Deaths"]) - NumCardio.USA
+NumNonCardio.USA <- as.numeric(cardio_USA_CHN[2, "Total_Deaths"]) - NumCardio.USA
 
 # Posterior parameter
 astar.USA <- a + NumCardio.USA
