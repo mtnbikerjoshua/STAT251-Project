@@ -192,20 +192,22 @@ mean(post.diff)
 quantile(post.diff, c(0.025, 0.975))
 
 # Histogram of the posterior Difference 
-hist(post.diff, main = expression(paste("Estimated Posterior and density of ", theta[USA], "-", theta[CHN], sep = "")),
+hist(post.diff, freq = FALSE, main = expression(paste("Estimated Posterior and density of ", theta[USA], "-", theta[CHN], sep = "")),
      xlab = expression(theta[USA] - theta[CHN]), ylab = "Density")
 lines(density(post.diff), col = "red")
 ```
+
+Conclusion of the posterior difference from USA and China: We compared the the death cause by cardio disease in the USA and China, and conclude, based on our prior belif and data collection from WHO, the proportion of cardio-disease death in China is higher than the USA. The probability of theta be in (-0.131, -0.130) is 95%. 
 ## Posterior predictive
 ```{r}
 # Predictive distribution 
-pred.dist <- function(a, b, ynew, nnew){
-      logprob <- lgamma(a+b) - (lgamma(a) + lgamma(b)) +
-      lchoose(nnew, ynew) + lgamma(a+ynew) +
-      lgamma(b+nnew-ynew) - lgamma(a+b+nnew)
+#pred.dist <- function(a, b, ynew, nnew){
+#      logprob <- lgamma(a+b) - (lgamma(a) + lgamma(b)) +
+#      lchoose(nnew, ynew) + lgamma(a+ynew) +
+#      lgamma(b+nnew-ynew) - lgamma(a+b+nnew)
 
-      exp(logprob)
-}
+#      exp(logprob)
+#}
 
 ```
 
@@ -214,24 +216,24 @@ pred.dist <- function(a, b, ynew, nnew){
 # USA
 # We suppose we continue observe for the next season after collecting the death data in 2020,
 # compute we would observe at least 6000 people passed away due to cardio disease out of 20000 total  death in USA. 
-post.pred.USA <- pred.dist(a = astar.USA, b = bstar.USA, ynew = 6000:20000, nnew = 20000)
-sum(post.pred.USA)
+#post.pred.USA <- pred.dist(a = astar.USA, b = bstar.USA, ynew = 6000:20000, nnew = 20000)
+#sum(post.pred.USA)
 
 # Estimate above using Monte Carlo
-J = 100000
-mc.postpred.USA <- rbinom(J, size = 20000, prob = rbeta(J,astar.USA,bstar.USA))
-mean(mc.postpred.USA >= 6000)
+#J = 100000
+#mc.postpred.USA <- rbinom(J, size = 20000, prob = rbeta(J,astar.USA,bstar.USA))
+#mean(mc.postpred.USA >= 6000)
 
 #CHN
 # We suppose we continue observe for the next season after collecting the death data in 2020,
 # compute we would observe at least 6000 people passed away due to cardio disease out of 20000 total  death in USA. 
-post.pred.CHN <- pred.dist(a = astar.CHN, b = bstar.CHN, ynew = 6000:20000, nnew = 20000)
-sum(post.pred.CHN)
+#post.pred.CHN <- pred.dist(a = astar.CHN, b = bstar.CHN, ynew = 6000:20000, nnew = 20000)
+#sum(post.pred.CHN)
 
 # Estimate above using Monte Carlo
-J = 100000
-mc.postpred.CHN <- rbinom(J, size = 20000, prob = rbeta(J,astar.CHN,bstar.CHN))
-mean(mc.postpred.CHN >= 6000)
+#J = 100000
+#mc.postpred.CHN <- rbinom(J, size = 20000, prob = rbeta(J,astar.CHN,bstar.CHN))
+#mean(mc.postpred.CHN >= 6000)
 
 
 ```
