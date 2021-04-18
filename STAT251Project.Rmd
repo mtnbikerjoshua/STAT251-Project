@@ -129,14 +129,14 @@ Comparison people passed away from Cardio Disease between the USA and China
 # create a table that have information for both USA and China
 cardio_USA_CHN <- cardio %>%
                   filter(Country == "USA"| Country == "CHN") %>%
-                  mutate(Cardio_Disease = as.character(round(Cardio_Disease) * 1000, 5),
-                         Total_Deaths = as.character(round(Total_Deaths) * 1000, 4))
+                  mutate(Cardio_Disease = (Cardio_Disease) * 1000,
+                         Total_Deaths = (Total_Deaths) * 1000)
 
 kable(cardio_USA_CHN, align = "c")
                   
 ```
 Now, based on that data, we will update the prior distributions and call the new parameters $a^*$ and $b^*$.
-$$a^*_\text{USA}=a+y=1.5+873,000=873,001.5$$
+$$a^*_\text{USA}=a+y=1.5+873,200=873,201.5$$
 $$b^*_\text{USA}=b+n-y=10+2,949,214-873,000=20,76,224$$ 
 $$a^*_\text{CHN}=a+y=1.5+4,307,000=4,307001.5$$
 $$b^*_\text{OTH}=b+n-y=10+10,106,000-4,307,000=5,799,010$$
@@ -184,10 +184,10 @@ bstar.CHN <- b + NumNonCardio.CHN
 
 # Posterior distribution for people passed away due to Cardio Disease
 post.cardio.CHN <- rbeta(J, astar.CHN, bstar.CHN)
-
+mean(pos)
 
 ```
-## Posterior distribution for USA and CHINA
+## Posterior distribution graph for USA and CHINA
 ```{r}
 x <- seq(0.29, 0.3, length = 1001)
 plot(x, dbeta(x, astar.USA, bstar.USA), type = "l",
@@ -196,9 +196,9 @@ plot(x, dbeta(x, astar.USA, bstar.USA), type = "l",
                        list(a = astar.USA, b = bstar.USA)),
      ylab = "Density",
      xlab = "p")
-lines(x, dbeta(x, astar.CHN, bstar.CHN), type = "l")
 
-plot(x, dbeta(x, astar.CHN, bstar.CHN), type = "l",
+y <- seq(0.42, 0.43, length = 1001)
+plot(y, dbeta(y, astar.CHN, bstar.CHN), type = "l",
      main = substitute(paste(pi, "(", theta, "|y)", " ~ Beta(a = ",
                              a, ", b = ", b, ")",  sep = ""),
                        list(a = astar.CHN, b = bstar.CHN)),
