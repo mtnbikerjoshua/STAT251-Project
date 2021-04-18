@@ -141,8 +141,8 @@ kable(cardio_USA_CHN, align = "c")
 Now, based on that data, we will update the prior distributions and call the new parameters $a^*$ and $b^*$.
 $$a^*_\text{USA}=a+y=1.5+873,200=873,201.5$$
 $$b^*_\text{USA}=b+n-y=10+2,949,214-873,200=2,076,024$$ 
-$$a^*_\text{CHN}=a+y=1.5+4,307,000=4,307001.5$$
-$$b^*_\text{OTH}=b+n-y=10+10,106,000-4,307,000=5,799,010$$
+$$a^*_\text{CHN}=a+y=1.5+4,306,536=4,306,537.5$$
+$$b^*_\text{CHN}=b+n-y=10+10,105,596-4,306,536=5,799,070$$
 
 ### Posterior Distribution 
 ```{r}
@@ -172,16 +172,14 @@ bstar.CHN <- b + NumNonCardio.CHN
 
 # Posterior distribution for people passed away due to Cardio Disease
 post.cardio.CHN <- rbeta(J, astar.CHN, bstar.CHN)
-mean(pos)
+
 
 ```
-<<<<<<< HEAD
-## Posterior distribution graph for USA and CHINA
-=======
 
 ### Posterior distribution for USA and CHINA
->>>>>>> 8b7660539b1df798e2856b23c744c5ad778a9581
+
 ```{r}
+par(mfrow=c(1,2))
 x <- seq(0.29, 0.3, length = 1001)
 plot(x, dbeta(x, astar.USA, bstar.USA), type = "l",
      main = substitute(paste(pi, "(", theta, "|y)", " ~ Beta(a = ",
@@ -211,7 +209,8 @@ mean(post.diff)
 
 
 # 95% credible interval for Posterior difference
-quantile(post.diff, c(0.025, 0.975))
+CI_USA_CHN <- round(quantile(post.diff, c(0.025, 0.975)),4)
+
 
 # Histogram of the posterior Difference 
 hist(post.diff, freq = FALSE, main = expression(paste("Estimated Posterior and density of ", theta[USA], "-", theta[CHN], sep = "")),
@@ -221,7 +220,10 @@ lines(density(post.diff), col = "red")
 
 ```
 
-Conclusion of the posterior difference from USA and China: We compared the the proportion of deaths caused by cardiovascular disease in the USA and China, and conclude, based on our prior belief and data collection from WHO, that the proportion of deaths caused by cardio-disease in China is higher than in the USA. The probability that theta is in (-0.131, -0.130) is 95%. 
+Conclusion of the posterior difference from USA and China: We compared the the proportion of deaths caused by cardiovascular disease in the USA and China, and conclude, based on our prior belief and data collection from WHO, that the proportion of deaths in the United States due to cardiovascular disease is between `r abs(CI_USA_CHN[2])` and `r abs(CI_USA_CHN[1])` lower than the proportion of deaths due to cardiovascular disease in China.
+
+
+
 
 ## Analysis: USA vs All Other Countries
 
@@ -325,7 +327,7 @@ According to our data character, we chose a Bayesian approach to analyze our par
 
 The model we chose is binomial-beta model, and our prior belief for the proportion of deaths caused by cardiovascular disease follows a beta distribution with $\text{shape} = 1.5$ and $\text{rate} = 10$. We have found the conjugate posterior distribution for the proportion of deaths caused by cardiovascular disease in the USA, China, and all other countries. 
 
-We did posterior distribution comparison between the USA vs China and the USA vs all other countries. According to the large number of draws from the posterior difference, we reject the null hypothesis that the proportion of deaths due to cardiovascular disease is the same in the USA as in China as in the world. In the USA vs China comparison, there is a 95% probability that the difference in the proportion of deaths in the United States vs China due to cardiovascular disease is between -0.131 and -0.130. Since zero is not in the interval and the mean difference in proportions is less than zero, we conclude that the proportion of deaths due to cardiovascular disease in the USA is smaller than in China. Similarly, in the comparison between the USA and all other countries, there is a 95% probability that the proportion of deaths in the United States due to cardiovascular disease is between -0.0283 and -0.0272 and we conclude that the proportion of deaths due to cardiovascular disease is lower in the United States than the world average.
+We did posterior distribution comparison between the USA vs China and the USA vs all other countries. According to the large number of draws from the posterior difference, we reject the null hypothesis that the proportion of deaths due to cardiovascular disease is the same in the USA as in China as in the world. In the USA vs China comparison, there is a 95% probability that the difference in the proportion of deaths in the United States vs China due to cardiovascular disease is between -0.1307 and -0.1295. Since zero is not in the interval and the mean difference in proportions is less than zero, we conclude that the proportion of deaths due to cardiovascular disease in the USA is smaller than in China. Similarly, in the comparison between the USA and all other countries, there is a 95% probability that the proportion of deaths in the United States due to cardiovascular disease is between -0.0283 and -0.0272 and we conclude that the proportion of deaths due to cardiovascular disease is lower in the United States than the world average.
 
 Although we conclude that the proportion of deaths in the United States due to cardiovascular disease is lower than same cause in China and all other countries as a whole, we do not know the reason behind it. It might be hard to draw a conclusion for why the USA has a lower proportion of death due to cardiovascular disease, but we could do further research to attempt to determine a cause. Our hypothesis is that maybe the health care system is better in the United States than in other countries. In follow up, perhaps we could measure the quality of health care in different countries and make a comparison.
 
