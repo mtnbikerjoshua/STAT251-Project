@@ -179,6 +179,17 @@ post.cardio.CHN <- rbeta(J, astar.CHN, bstar.CHN)
 
 
 ```
+## Posterior distribution for USA and CHINA
+```{r}
+x <- seq(0.29, 0.3, length = 1001)
+plot(x, dbeta(x, astar.USA, bstar.USA), type = "l",
+     main = substitute(paste(pi, "(", theta, "|y)", " ~ Beta(a = ",
+                             a, ", b = ", b, ")",  sep = ""),
+     ylab = "Density",
+     xlab = "p"))
+lines(x, dbeta(x, astar.CHN, bstar.CHN), type = "l")
+
+```
 
 ## Posterior Difference between USA and CHN
 ```{r}
