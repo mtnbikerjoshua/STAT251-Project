@@ -138,13 +138,14 @@ kable(cardio_USA_CHN, align = "c")
 
   
 ```
+
+### Posterior Distribution 
 Now, based on that data, we will update the prior distributions and call the new parameters $a^*$ and $b^*$.
 $$a^*_\text{USA}=a+y=1.5+873,200=873,201.5$$
 $$b^*_\text{USA}=b+n-y=10+2,949,214-873,000=20,76,224$$ 
 $$a^*_\text{CHN}=a+y=1.5+4,307,000=4,307001.5$$
 $$b^*_\text{OTH}=b+n-y=10+10,106,000-4,307,000=5,799,010$$
 
-### Posterior Distribution 
 ```{r}
 # Number of people passed away from Cardio Disease in the USA from 2000 to 2019
 NumCardio.USA <- as.numeric(cardio_USA_CHN[2,"Cardio_Disease"])
@@ -172,16 +173,12 @@ bstar.CHN <- b + NumNonCardio.CHN
 
 # Posterior distribution for people passed away due to Cardio Disease
 post.cardio.CHN <- rbeta(J, astar.CHN, bstar.CHN)
-mean(pos)
+
 
 ```
-<<<<<<< HEAD
-## Posterior distribution graph for USA and CHINA
-=======
 
-### Posterior distribution for USA and CHINA
->>>>>>> 8b7660539b1df798e2856b23c744c5ad778a9581
-```{r}
+```{r fig.height = 3, fig.width = 9, fig.cap="Posterior distribution of Death by Cardiovascular Disease in the United States (left) and China (right)"}
+par(mfrow = c(1, 2))
 x <- seq(0.29, 0.3, length = 1001)
 plot(x, dbeta(x, astar.USA, bstar.USA), type = "l",
      main = substitute(paste(pi, "(", theta, "|y)", " ~ Beta(a = ",
@@ -202,21 +199,24 @@ plot(y, dbeta(y, astar.CHN, bstar.CHN), type = "l",
 ```
 
 ### Posterior Difference between USA and CHN
-```{r}
+```{r fig.height=3, fig.width=4, fig.cap="Monte Carlo approximation of the posterior distribution of the difference in proportions of deaths due to cardiovascular disease in the USA compared to other countries"}
 # Posterior Difference
 post.diff <- post.cardio.USA - post.cardio.CHN
 
+# Histogram of the posterior Difference 
+hist(post.diff, freq = FALSE, main = expression(paste("Estimated Posterior of ", theta[USA], "-", theta[CHN], sep = "")),
+     xlab = expression(theta[USA] - theta[CHN]), ylab = "Density")
+lines(density(post.diff), col = "red")
+
+
+```
+
+```{r, include=FALSE}
 # mean of post.diff
 mean(post.diff)
 
-
 # 95% credible interval for Posterior difference
 quantile(post.diff, c(0.025, 0.975))
-
-# Histogram of the posterior Difference 
-hist(post.diff, freq = FALSE, main = expression(paste("Estimated Posterior and density of ", theta[USA], "-", theta[CHN], sep = "")),
-     xlab = expression(theta[USA] - theta[CHN]), ylab = "Density")
-lines(density(post.diff), col = "red")
 
 
 ```
@@ -253,7 +253,7 @@ $$b^*_\text{USA}=b+n-y=10+2,949,214-873,200=20,76,024$$
 $$a^*_\text{OTH}=a+y=1.5+16,990,627=16,990,628.5$$
 $$b^*_\text{OTH}=b+n-y=10+52,466,558-16,990,627=35,475,941$$
 
-```{r post_USA, fig.height = 3, fig.width = 9, fig.cap="Posterior distribution of Death by Cardiovascular Disease in the United States and the rest of the world"}
+```{r post_USA, fig.height = 3, fig.width = 9, fig.cap="Posterior distribution of Death by Cardiovascular Disease in the United States (left) and the rest of the world (right)"}
 par(mfrow = c(1, 2))
 
 ## Update the prior for USA and plot the posterior
@@ -286,10 +286,6 @@ plot(x, dbeta(x, astar_OTH, bstar_OTH), type = "l",
      ylab = "Density",
      xlab = "p")
 
-# Means
-astar_USA / (astar_USA + bstar_USA)
-astar_OTH / (astar_OTH + bstar_OTH)
-
 
 ```
 
@@ -297,7 +293,7 @@ astar_OTH / (astar_OTH + bstar_OTH)
 
 We will now use Monte Carlo sampling to take samples from the posterior distribution of $p_\text{USA}-p_\text{OTH}$ and compute a 95% confidence interval.
 
-
+\newpage
 ```{r post_USAvAll, fig.height=3, fig.width=4, fig.cap="Monte Carlo approximation of the posterior distribution of the difference in proportions of deaths due to cardiovascular disease in the USA compared to other countries"}
 ## Sample from the posterior of USA - OTH and plot the estimated posterior
 J <- 10^6
