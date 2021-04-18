@@ -44,11 +44,11 @@ cardio <- bind_cols(country_codes, cardio_disease_vals, total_deaths_vals)
 ```
 
 ## Introduction
-Between the years of 2000 and 2019, the World Health Organization (WHO) has collected data on causes of death in 183 countries. We are interested particularly in Cardiovascular Disease. The purpose of this analysis will be to determine if cardiovascular disease is a more prevalent cause of death in the United States than elsewhere, that is if the proportion of deaths due to cardiovascular disease is greater in the US than in other countries. We are also interested in comparing death due to cardiovascular disease in the US vs China, the countries of origin of the authors.
+Between the years of 2000 and 2019, the World Health Organization (WHO) has collected data on causes of death in 183 countries. We are interested particularly in Cardiovascular Disease. The purpose of this analysis will be to determine if cardiovascular disease is a more or less prevalent cause of death in the United States than elsewhere, that is if the proportion of deaths due to cardiovascular disease is greater or smaller in the US than in other countries. We are also interested in comparing death due to cardiovascular disease in the US vs China, the countries of origin of the authors.
 
 To do this, we will model the proportion of deaths due to cardiovascular disease in the United States as the probability of success of a binomial random variable, where the population consists of all deaths in the United States and a trial consists of sampling one death and determining whether or not the cause was cardiovascular disease. We will consider a success to be that the death was caused by cardiovascular disease and a failure that it was not. We will compare that to a similar model of deaths due to cardiovascular disease in China. We will also model the proportion of deaths outside the United States caused by cardiovascular disease as the probability of success of a binomial random variable where the population is all deaths that occurred outside of the United States.
 
-We will determine an appropriate beta prior distribution, which we will use for all three data distributions; we will run a Bayesian update based on data from WHO; and we will compare the posterior distribution for the USA to the posterior distributions for China and for all countries except the USA combined using Monte-Carlo methods. Based on the Monte-Carlo estimated posterior distribution for the difference in proportions, we will determine a 95% confidence interval for each test and conclude whether the proportions are significantly different.
+We will determine an appropriate beta prior distribution, which we will use for all three data distributions; we will run a Bayesian update based on data from WHO; and we will compare the posterior distribution for the USA to the posterior distributions for China and for all countries except the USA combined using Monte-Carlo methods. Our null hypothesis in the first case is that $\mu_\text{USA}-\mu_\text{CHN}=0$ and the alternative hypothesis is that $\mu_\text{USA}-\mu_\text{CHN}\ne0$. In the second case, our null hypothesis is that $\mu_\text{USA}-\mu_\text{OTH}=0$ and the alternative hypothesis is that $\mu_\text{USA}-\mu_\text{OTH}\ne0$. Based on the Monte-Carlo estimated posterior distribution for the difference in proportions, we will determine a 95% confidence interval for each test and conclude whether the proportions are significantly different.
 
 ## Data
 
@@ -124,16 +124,17 @@ plot(x, dbeta(x, a, b), type = "l",
 
 ## Analysis: USA vs China
 
-Comparison people passed away from Cardio Disease between the USA and China
+Comparison for people who passed away from Cardiovascular Disease between the USA and China
 ```{r}
 # create a table that have information for both USA and China
 cardio_USA_CHN <- cardio %>%
-                  filter(Country == "USA"| Country == "CHN") %>%
-                  mutate(Cardio_Disease = as.character(round(Cardio_Disease) * 1000, 5),
-                         Total_Deaths = as.character(round(Total_Deaths) * 1000, 4))
+  filter(Country == "USA"| Country == "CHN") %>%
+  mutate(Cardio_Disease = round(Cardio_Disease * 1000),
+         Total_Deaths = Total_Deaths * 1000)
 
 kable(cardio_USA_CHN, align = "c")
-                  
+
+  
 ```
 Now, based on that data, we will update the prior distributions and call the new parameters $a^*$ and $b^*$.
 $$a^*_\text{USA}=a+y=1.5+873,000=873,001.5$$
@@ -141,23 +142,7 @@ $$b^*_\text{USA}=b+n-y=10+2,949,214-873,000=20,76,224$$
 $$a^*_\text{CHN}=a+y=1.5+4,307,000=4,307001.5$$
 $$b^*_\text{OTH}=b+n-y=10+10,106,000-4,307,000=5,799,010$$
 
-
-
-
-## Prior Distribution
-
-```{r}
-x <- seq(0, 1, length = 1001)
-a <- 1.5
-b <- 10
-plot(x, dbeta(x, a, b), type = "l")
-
-# Prior Distribution 
-J <- 100000
-prior.cardio <- rbeta(J, a, b)
-```
-
-## Posterior Distribution 
+### Posterior Distribution 
 ```{r}
 # Number of people passed away from Cardio Disease in the USA from 2000 to 2019
 NumCardio.USA <- as.numeric(cardio_USA_CHN[2,"Cardio_Disease"])
@@ -170,6 +155,7 @@ astar.USA <- a + NumCardio.USA
 bstar.USA <- b + NumNonCardio.USA
 
 # Posterior distribution for people passed away due to Cardio Disease
+J <- 10^6
 post.cardio.USA <- rbeta(J, astar.USA, bstar.USA)
 
 # Number of people passed away from Cardio Disease in the China from 2000 to 2019
@@ -187,7 +173,8 @@ post.cardio.CHN <- rbeta(J, astar.CHN, bstar.CHN)
 
 
 ```
-## Posterior distribution for USA and CHINA
+
+### Posterior distribution for USA and CHINA
 ```{r}
 x <- seq(0.29, 0.3, length = 1001)
 plot(x, dbeta(x, astar.USA, bstar.USA), type = "l",
@@ -205,9 +192,10 @@ plot(x, dbeta(x, astar.CHN, bstar.CHN), type = "l",
      ylab = "Density",
      xlab = "p")
 
+
 ```
 
-## Posterior Difference between USA and CHN
+### Posterior Difference between USA and CHN
 ```{r}
 # Posterior Difference
 post.diff <- post.cardio.USA - post.cardio.CHN
@@ -223,9 +211,11 @@ quantile(post.diff, c(0.025, 0.975))
 hist(post.diff, freq = FALSE, main = expression(paste("Estimated Posterior and density of ", theta[USA], "-", theta[CHN], sep = "")),
      xlab = expression(theta[USA] - theta[CHN]), ylab = "Density")
 lines(density(post.diff), col = "red")
+
+
 ```
 
-Conclusion of the posterior difference from USA and China: We compared the the death cause by cardio disease in the USA and China, and conclude, based on our prior belif and data collection from WHO, the proportion of cardio-disease death in China is higher than the USA. The probability of theta be in (-0.131, -0.130) is 95%. 
+Conclusion of the posterior difference from USA and China: We compared the the proportion of deaths caused by cardiovascular disease in the USA and China, and conclude, based on our prior belief and data collection from WHO, that the proportion of deaths caused by cardio-disease in China is higher than in the USA. The probability that theta is in (-0.131, -0.130) is 95%. 
 
 ## Analysis: USA vs All Other Countries
 
@@ -249,7 +239,7 @@ row.names(USvAll) <- cardio_comp$Category
 
 
 ```
-
+### Posterior Distributions for USA and OTH
 
 Now, based on that data, we will update the prior distributions and call the new parameters $a^*$ and $b^*$.
 $$a^*_\text{USA}=a+y=1.5+873,200=873,201.5$$
@@ -257,7 +247,9 @@ $$b^*_\text{USA}=b+n-y=10+2,949,214-873,200=20,76,024$$
 $$a^*_\text{OTH}=a+y=1.5+16,990,627=16,990,628.5$$
 $$b^*_\text{OTH}=b+n-y=10+52,466,558-16,990,627=35,475,941$$
 
-```{r post_USA, fig.height = 3, fig.width = 4, fig.cap="Posterior distribution of Death by Cardiovascular Disease in the United States"}
+```{r post_USA, fig.height = 3, fig.width = 9, fig.cap="Posterior distribution of Death by Cardiovascular Disease in the United States and the rest of the world"}
+par(mfrow = c(1, 2))
+
 ## Update the prior for USA and plot the posterior
 y <- USvAll["USA", "Cardio_Disease"]
 n <- USvAll["USA", "Total_Deaths"]
@@ -273,10 +265,6 @@ plot(x, dbeta(x, astar_USA, bstar_USA), type = "l",
      xlab = "p")
 
 
-```
-
-
-```{r post_OTH, fig.height = 3, results='hide', fig.width = 4, fig.cap="Posterior distribution of death by cardiovascular disease in countries other than the United States"}
 ## Update the prior for the rest of the world and plot the posterior
 y <- USvAll["OTH", "Cardio_Disease"]
 n <- USvAll["OTH", "Total_Deaths"]
@@ -298,6 +286,8 @@ astar_OTH / (astar_OTH + bstar_OTH)
 
 
 ```
+
+### Posterior Difference between USA and OTH
 
 We will now use Monte Carlo sampling to take samples from the posterior distribution of $p_\text{USA}-p_\text{OTH}$ and compute a 95% confidence interval.
 
@@ -322,16 +312,16 @@ CI <- round(quantile(sample_USAvAll, c(0.025, 0.975)), 4)
 
 ```
 
-According to our credible interval, there is a 95% probability that the proportion of deaths in the United States due to cardiovascular disease is between `r abs(CI[2])` and `r abs(CI[1])` lower than the proportion of deaths due to cardiovascular disease in other countries.
+According to our credible interval, there is a 95% probability that the proportion of deaths in the United States due to cardiovascular disease is between `r abs(CI[2])` and `r abs(CI[1])` lower than the proportion of deaths due to cardiovascular disease in other countries. We therefore conclude that the proportion of deaths caused by cardiovascular disease outside the United States is greater than in the United States.
 
 ## Conclusion/Discussion
-According to our data character, we choose a Bayesian approach to analyize our parameter of interests, which are whether cardiovascular disease is a more prevalent cause of death in the United States than China and elsewhere. 
+According to our data character, we chose a Bayesian approach to analyze our parameters of interest, which are whether cardiovascular disease is a more or less prevalent cause of death in the United States than in China or elsewhere. 
 
-The model we chose is binomial beta distribution, and our prior belief for people passed away due to cardiovascular disease is follow a Beta distribution with shape = 1.5 and rate = 10. We have also found the conjugate posterior distribution for death cause is cardiovascular disease in the USA, China and all othercountry. 
+The model we chose is binomial-beta model, and our prior belief for the proportion of deaths caused by cardiovascular disease follows a beta distribution with $\text{shape} = 1.5$ and $\text{rate} = 10$. We have found the conjugate posterior distribution for the proportion of deaths caused by cardiovascular disease in the USA, China, and all other countries. 
 
-We did posterior distribution comparison between the USA and China, the USA and all other countries. According to the large number of draws from the posterior difference, we conclude that our null hypothesis is wrong. In the USA and China comparsion, there is a 95% probability that the proportion of deaths in the United States due to cardiovascular disease is between -0.131 and -0.130, which is lower than the proportion of deaths due to cardiovascular disease in China. Similar in comparision between the USA and all other countries, there is a 95% probability that the proportion of deaths in the United States due to cardiovascular disease is between -0.0283 and -0.0272, which is lower than the proportion of deaths due to cardiovascular disease in other countries.
+We did posterior distribution comparison between the USA vs China and the USA vs all other countries. According to the large number of draws from the posterior difference, we reject the null hypothesis that the proportion of deaths due to cardiovascular disease is the same in the USA as in China as in the world. In the USA vs China comparison, there is a 95% probability that the difference in the proportion of deaths in the United States vs China due to cardiovascular disease is between -0.131 and -0.130. Since zero is not in the interval and the mean difference in proportions is less than zero, we conclude that the proportion of deaths due to cardiovascular disease in the USA is smaller than in China. Similarly, in the comparison between the USA and all other countries, there is a 95% probability that the proportion of deaths in the United States due to cardiovascular disease is between -0.0283 and -0.0272 and we conclude that the proportion of deaths due to cardiovascular disease is lower in the United States than the world average.
 
-Although we conclude that the proportion of deaths in the United States due to cardiovascular disease is lower than same cause in China and all other countries as a whole, we do not know the reason behind it, and it might be hard to draw a conclusion for why the USA is lower at cardio-disease death, there are tremendous factor contribute to the facts.
+Although we conclude that the proportion of deaths in the United States due to cardiovascular disease is lower than same cause in China and all other countries as a whole, we do not know the reason behind it. It might be hard to draw a conclusion for why the USA has a lower proportion of death due to cardiovascular disease, but we could do further research to attempt to determine a cause. Our hypothesis is that maybe the health care system is better in the United States than in other countries. In follow up, perhaps we could measure the quality of health care in different countries and make a comparison.
 
 
 \newpage
