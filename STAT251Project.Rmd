@@ -140,7 +140,7 @@ kable(cardio_USA_CHN, align = "c")
 ```
 Now, based on that data, we will update the prior distributions and call the new parameters $a^*$ and $b^*$.
 $$a^*_\text{USA}=a+y=1.5+873,200=873,201.5$$
-$$b^*_\text{USA}=b+n-y=10+2,949,214-873,000=20,76,224$$ 
+$$b^*_\text{USA}=b+n-y=10+2,949,214-873,200=2,076,024$$ 
 $$a^*_\text{CHN}=a+y=1.5+4,307,000=4,307001.5$$
 $$b^*_\text{OTH}=b+n-y=10+10,106,000-4,307,000=5,799,010$$
 
